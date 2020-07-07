@@ -72,7 +72,7 @@
     
       const root = pack(data, dimensions);
     
-      var color = d3.scaleLinear()
+      var color = d3.scaleQuantize()
               .domain(d3.extent(data, d => d.value))
               .range(options.theme.chart.colors);
               
