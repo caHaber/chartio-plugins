@@ -72,7 +72,9 @@
     
       const root = pack(data, dimensions);
     
-      var color = d3.scaleOrdinal(data.map(d => d.group), options.theme.chart.colors)
+      var color = d3.scaleLinear()
+              .domain(d3.extent(data, d => d.value))
+              .range(options.theme.chart.colors);
       const leaves = root.leaves().filter(d => d.depth && d.value);
     
        d3.select("body").selectAll("svg").remove()
@@ -89,7 +91,7 @@
         .data(leaves)
         .enter()
         .append("g");
-        
+
         node
         .append("circle")
           .attr("r", d => d.r)
