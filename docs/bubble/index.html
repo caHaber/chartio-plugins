@@ -102,6 +102,13 @@
           .text(d => d.data.name)
           .attr("font-weight", 300)
           .attr("fill-opacity", 0.5)
+
+          node.append("text")
+          .attr("x", 0)
+          .attr("y", 20)
+          .text(d => format(d.data.value))
+          .attr("font-weight", 300)
+          .attr("fill-opacity", 0.5)
     
     
           var simulation = d3.forceSimulation(leaves)
