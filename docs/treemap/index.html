@@ -1,0 +1,68 @@
+
+
+
+<html>
+    <head>
+      <script src="https://code.jscharting.com/latest/jscharting.js"></script>
+    </head>
+    <body style="margin: 0;">
+      <div id="chartDiv"></di>
+    </body>
+    <script>
+    
+    
+    
+    function drawGraph(values, dimensions,options){
+    
+       const data = values.map(d => {
+           const obj = {name: d[0], valyue:+d[1]}
+           return obj
+       })
+       // JS 
+var chart = JSC.chart('chartDiv', { 
+  debug: true, 
+  type: 'radar area', 
+  legend_visible: false, 
+  title: { 
+    position: 'center', 
+    label: { 
+      text: '2020 Sales ', 
+      style: { 
+        fontSize: 15, 
+        fontWeight: 'normal'
+      } 
+    } 
+  }, 
+  defaultSeries: { 
+    opacity: 0.7, 
+    defaultPoint_marker: { 
+      outline: { color: 'white', width: 2 }, 
+      size: 12 
+    } 
+  }, 
+  series: [ 
+    { 
+      /*Controls the area fill.*/
+      points: data
+    } 
+  ] 
+}); 
+    
+    }
+    
+    function receiveMessage (event){
+          const message = JSON.parse(event.data)
+          var div = document.getElementsByTagName('body')[0];
+            // console.log(message.options)
+           
+            try{
+                drawGraph(message.data.datasets[0].values, message.dimensions, message.options)
+            }catch(e) {
+                div.innerHTML += JSON.stringify(e);
+            }
+           
+        }
+    
+    window.addEventListener('message', receiveMessage);
+    </script>
+    </html>

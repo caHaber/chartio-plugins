@@ -1,0 +1,162 @@
+
+
+
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.js" integrity="sha512-F63QPFxQ27mn9COmkZhSirC1pBNeVJ7MJJs4wtK6XfiAaH3WM1SfX6Sv2Pme/499+hafP0dALVZOADw4W2r6eQ==" crossorigin="anonymous"></script>
+    </head>
+    <body style="margin: 0;">
+    
+    </body>
+    <script>
+    
+    function measureWidth(text){
+      const context = document.createElement("canvas").getContext("2d");
+      return text => context.measureText(text).width;
+    }
+    
+    var format = d3.format(",d")
+    
+    function fit(text, value) {
+      let line;
+      let lineWidth0 = Infinity;
+      const lineHeight = 12;
+      const targetWidth = Math.sqrt(measureWidth(text.trim()) * lineHeight);
+      const words = text.split(/\s+/g); // To hyphenate: /\s+|(?<=-)/
+      if (!words[words.length - 1]) words.pop();
+      if (!words[0]) words.shift();
+      const lines = [];
+      for (let i = 0, n = words.length; i < n; ++i) {
+        let lineText1 = (line ? line.text + " " : "") + words[i];
+        let lineWidth1 = measureWidth(lineText1);
+        if ((lineWidth0 + lineWidth1) * 0.4 < targetWidth) {
+          line.width = lineWidth0 = lineWidth1;
+          line.text = lineText1;
+        } else {
+          lineWidth0 = measureWidth(words[i]);
+          line = {width: lineWidth0, text: words[i]};
+          lines.push(line);
+        }
+      }
+      if (value !== undefined) lines.push({width: measureWidth(value), text: value});
+      let radius = 0;
+      for (let i = 0, n = lines.length; i < n; ++i) {
+        const dy = (Math.abs(i - n / 2 + 0.5) + 0.5) * lineHeight;
+        const dx = lines[i].width / 2;
+        radius = Math.max(radius, Math.sqrt(dx ** 2 + dy ** 2));
+      }
+      return {lines, radius};
+    }
+    
+    
+    
+    function pack(data, dimensions) {
+      let alt = d3.median(data, d => d.value);
+      if (!alt) alt = 1;
+      console.log(data)
+      return d3.pack()
+          .size([dimensions.width, dimensions.height])
+          .padding(1)
+        (d3.hierarchy({children: data})
+          .sum(d => d.value));
+    }
+    
+    var diameter = 500;
+    
+    function drawGraph(values, dimensions,options){
+    
+       const data = values.map(d => {
+           const obj = {name: d[0], value:+d[1]}
+           return obj
+       })
+    
+      const root = pack(data, dimensions);
+    
+      var color = d3.scaleOrdinal(data.map(d => d.group), options.theme.chart.colors)
+      const leaves = root.leaves().filter(d => d.depth && d.value);
+    
+       d3.select("body").selectAll("svg").remove()
+      const svg = d3.select("body").append("svg")
+      .attr("viewBox",`0 0 ${dimensions.width} ${dimensions.height}`)
+          .style("width", "100%")
+          .style("height", "auto")
+          .style("background", "#fff")
+          .style("font", "10px sans-serif")
+          .attr("text-anchor", "middle");
+    
+      var node = svg.append("g")
+        .selectAll("g")
+        .data(leaves)
+        .enter()
+        .append("g")
+        .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+        node
+        .append("circle")
+          .attr("r", d => d.r)
+          .attr("fill", d => color(d.data.name));
+          
+        node.append("text")
+          .attr("x", 0)
+          .text(d => d.data.name)
+          .attr("font-weight", 300)
+          .attr("fill-opacity", 0.5)
+    
+    
+          var simulation = d3.forceSimulation(leaves)
+        .force("charge", d3.forceCollide().radius(function(d){return d.r}))
+        .force("many", d3.forceManyBody().strength(30))
+        .force("center", d3.forceCenter().x(dimensions.width * .5).y(dimensions.height * .5))
+        .on("tick", ticked);
+    
+    function ticked() {
+      node
+      .attr("transform", d => {
+            return `translate(${d.x},${d.y})`;
+          })
+        // text.attr("transform", d => {
+        //     const {lines, radius} = fit(d.data.name, isNaN(d.data.count) ? undefined : format(d.data.count));
+        //     d.lines = lines;
+        //     if (!isNaN(d.data.count)) d.lines[d.lines.length - 1].count = true;
+        //     return `translate(${d.x},${d.y})`;
+        //   })
+    }
+    
+      
+    function dragstarted(d) {
+      if (!d3.event.active) simulation.alphaTarget(0.3).restart()
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    
+    function dragged(d) {
+      d.fx = d3.event.x;
+      d.fy = d3.event.y;
+    }
+    
+    function dragended(d) {
+        if (!d3.event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+    
+    }
+    
+    function receiveMessage (event){
+          const message = JSON.parse(event.data)
+          var div = document.getElementsByTagName('body')[0];
+            // console.log(message.options)
+           
+            try{
+                drawGraph(message.data.datasets[0].values, message.dimensions, message.options)
+            }catch(e) {
+                div.innerHTML += JSON.stringify(e);
+            }
+           
+        }
+    
+    window.addEventListener('message', receiveMessage);
+    </script>
+    </html>
